@@ -5,17 +5,18 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 bart_tokenizer = None
 bart_model = None
 init_error = None
+MODEL_ID = "sshleifer/distilbart-cnn-12-6"
 
 def get_summarizer():
     global bart_tokenizer, bart_model, init_error
     if bart_model is None or bart_tokenizer is None:
         try:
-            print("Loading facebook/bart-large-cnn directly...")
-            bart_tokenizer = AutoTokenizer.from_pretrained("facebook/bart-large-cnn")
+            print(f"Loading {MODEL_ID}...")
+            bart_tokenizer = AutoTokenizer.from_pretrained(MODEL_ID)
             
             # Use GPU if available, else CPU
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            bart_model = AutoModelForSeq2SeqLM.from_pretrained("facebook/bart-large-cnn").to(device)
+            bart_model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_ID).to(device)
             print("Summarization model loaded successfully.")
         except Exception as e:
             init_error = str(e)
@@ -25,7 +26,7 @@ def get_summarizer():
 def summarize_medical_text(text: str) -> str:
     """Uses facebook/bart-large-cnn to summarize clinical text effectively."""
     if not text or len(text.strip()) < 30:
-        return "Text is too short for facebook/bart-large-cnn to summarize effectively."
+        return "Text is too short to summarize effectively."
     
     tokenizer, model = get_summarizer()
     if not tokenizer or not model:

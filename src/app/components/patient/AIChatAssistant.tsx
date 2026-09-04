@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MessageSquare, X, Send, Bot, User } from 'lucide-react';
+import { api } from '../../../services/api';
 
 interface Message {
   id: number;
@@ -9,20 +10,12 @@ interface Message {
   timestamp: Date;
 }
 
-const aiResponses = [
-  "I understand your concern. Based on your recent test results, your risk levels are within the normal range. However, I recommend discussing this with your doctor for a comprehensive evaluation.",
-  "Your symptoms are noted. I suggest logging them in the Symptom Logger for better tracking. Would you like me to help you with that?",
-  "Early detection is key in cancer prevention. Your current screening schedule is appropriate, but if you notice any new symptoms, please report them immediately.",
-  "Your genome analysis shows no concerning markers at this time. Continue with your healthy lifestyle and scheduled check-ups.",
-  "I can help explain your test results. Which specific aspect would you like to understand better?"
-];
-
 export default function AIChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
-      text: "Hello! I'm your AI health assistant. How can I help you today? I can explain your reports, answer health questions, or help you log symptoms.",
+      text: "I answer cancer-related diagnostic questions using the app's medical knowledge base. Ask about a report, test result, scan, biomarker, symptom, screening, or cancer-risk concern.",
       sender: 'ai',
       timestamp: new Date()
     }
@@ -39,12 +32,12 @@ export default function AIChatAssistant() {
     scrollToBottom();
   }, [messages]);
 
-  const handleSend = () => {
-    if (!inputText.trim()) return;
+  const handleSend = async (text = inputText) => {
+    if (!text.trim() || isTyping) return;
 
     const userMessage: Message = {
       id: messages.length + 1,
-      text: inputText,
+      text,
       sender: 'user',
       timestamp: new Date()
     };
@@ -53,17 +46,25 @@ export default function AIChatAssistant() {
     setInputText('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await api.chat({ query: text });
       const aiMessage: Message = {
-        id: messages.length + 2,
-        text: aiResponses[Math.floor(Math.random() * aiResponses.length)],
+        id: Date.now() + 1,
+        text: response.response || response.answer || 'Sorry, I received an empty response.',
         sender: 'ai',
         timestamp: new Date()
       };
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error: any) {
+      setMessages(prev => [...prev, {
+        id: Date.now() + 1,
+        text: `Error: ${error.message || 'Unable to contact the diagnostic assistant.'}`,
+        sender: 'ai',
+        timestamp: new Date()
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -158,12 +159,11 @@ export default function AIChatAssistant() {
             {/* Quick Actions */}
             <div className="px-4 py-2 border-t border-border overflow-x-auto">
               <div className="flex gap-2">
-                {['Explain my report', 'Log symptoms', 'Find doctor'].map((action) => (
+                {['What does a lung nodule indicate?', 'How are malignant and benign findings distinguished?', 'What does an abnormal CBC result mean?'].map((action) => (
                   <button
                     key={action}
                     onClick={() => {
-                      setInputText(action);
-                      handleSend();
+                      handleSend(action);
                     }}
                     className="px-3 py-1.5 text-xs rounded-full bg-muted hover:bg-muted/80 transition-colors whitespace-nowrap"
                   >

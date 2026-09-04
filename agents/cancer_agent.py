@@ -17,7 +17,7 @@ def explain_cancer_topic(query: str):
 CancerKnowledgeAgent = Agent(
     name="CancerKnowledgeAgent",
     description="Provides conversational educational explanations about cancer topics.",
-    model=Groq(id="qwen/qwen3-32b"),
+    model=Groq(id="openai/gpt-oss-120b"),
     markdown=False,
     tools=[explain_cancer_topic]
 )

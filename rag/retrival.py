@@ -102,7 +102,6 @@ import re
 from dotenv import load_dotenv
 from langchain_huggingface.embeddings import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore
-from qdrant_client import QdrantClient
 from groq import Groq
 
 load_dotenv()
@@ -114,7 +113,17 @@ GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 QDRANT_URL = os.getenv("QDRANT_URL")
 QDRANT_API_KEY = os.getenv("QDRANT_API_KEY_CLOUD")
 COLLECTION_NAME = "cancer_rag"
-MODEL_ID = "llama-3.1-8b-instant"
+MODEL_ID = "openai/gpt-oss-120b"
+DIAGNOSTIC_REFUSAL_MESSAGE = (
+    "I can only help with cancer-related diagnostic questions that can be checked "
+    "against this application's medical knowledge base. Please ask about a symptom, "
+    "test result, report finding, biomarker, scan, screening, or cancer-risk concern."
+)
+RAG_UNAVAILABLE_MESSAGE = (
+    "I could not retrieve supporting information from the medical knowledge base, "
+    "so I cannot provide an evidence-grounded response right now. Please try again later "
+    "or consult a qualified clinician."
+)
 
 if not GROQ_API_KEY:
     raise ValueError("GROQ_API_KEY not set")
@@ -136,15 +145,11 @@ def get_vector_store():
             model_name="sentence-transformers/all-MiniLM-L6-v2"
         )
 
-        qdrant_client = QdrantClient(
-            url=QDRANT_URL,
-            api_key=QDRANT_API_KEY,
-        )
-
         return QdrantVectorStore.from_existing_collection(
-            client=qdrant_client,
             collection_name=COLLECTION_NAME,
             embedding=embedding_model,
+            url=QDRANT_URL,
+            api_key=QDRANT_API_KEY,
         )
 
     except Exception as e:
@@ -157,10 +162,14 @@ def get_vector_store():
 def is_diagnostic_query(query: str):
     q = query.lower()
     patterns = [
-        r"malignant vs benign", r"mimicker", r"imaging features",
-        r"biomarker ratio", r"risk weightage", r"granuloma",
-        r"nodule", r"tuberculosis", r"sarcoidosis",
-        r"report", r"test", r"results", r"explain"
+        r"\bdiagnos", r"\bmalignan", r"\bbenign", r"\bcancer\b",
+        r"\btumou?r\b", r"\bnodule\b", r"\bmass\b", r"\blesion\b",
+        r"\bbiopsy\b", r"\bpatholog", r"\bcytolog", r"\bbiomarker\b",
+        r"\bmutation\b", r"\btmb\b", r"\bcbc\b", r"\bwbc\b", r"\brbc\b",
+        r"\bscan\b", r"\bimaging\b", r"\bx[ -]?ray\b", r"\bmri\b",
+        r"\bct\b", r"\bultrasound\b", r"\bmammogram\b", r"\bscreening\b",
+        r"\brisk\b", r"\bsymptom", r"\breport\b", r"\btest result",
+        r"\blab result", r"\bgranuloma\b", r"\btuberculosis\b", r"\bsarcoidosis\b"
     ]
     return any(re.search(p, q) for p in patterns)
 
@@ -183,16 +192,20 @@ def build_medical_context(docs):
 def analyze_cancer_case(user_query: str, vision_score=None):
 
     vector_db = get_vector_store()
+    if vector_db is None:
+        return RAG_UNAVAILABLE_MESSAGE
 
-    context = ""
-    if vector_db:
-        try:
-            docs = vector_db.max_marginal_relevance_search(
-                user_query, k=5, fetch_k=20
-            )
-            context = build_medical_context(docs)
-        except Exception as e:
-            print("RAG retrieval failed:", e)
+    try:
+        docs = vector_db.max_marginal_relevance_search(
+            user_query, k=5, fetch_k=20
+        )
+        context = build_medical_context(docs)
+    except Exception as e:
+        print("RAG retrieval failed:", e)
+        return RAG_UNAVAILABLE_MESSAGE
+
+    if not context:
+        return RAG_UNAVAILABLE_MESSAGE
 
     vision_block = ""
     if vision_score:
@@ -202,18 +215,18 @@ def analyze_cancer_case(user_query: str, vision_score=None):
     final_prompt = f"""
 You are an empathetic, expert Clinical Assistant.
 
-Clinical Research Context (From Internal RAG DB):
-{context if context else "No distinct external RAG context available for this."}
+Clinical Research Context (Retrieved from the internal Qdrant RAG database):
+{context}
 
 {vision_block}
 
 User Query: {user_query}
 
 Instructions:
-1. Provide a conversational, highly concise, and relevant answer based on the context above.
-2. DO NOT output heavily formatted, cluttered markdown with rigid structural headers (like "1. Clinical Summary 2. Diagnostic Analysis") unless explicitly asked to generate a full formal report.
-3. If the user's query lacks context (for example, "Explain my report" but no text is provided), immediately stop and ask 1 or 2 specific clarifying questions to understand their situation better before jumping to conclusions.
-4. Keep the tone helpful, human-like, and professional.
+1. Answer only from the retrieved context above. Do not use general knowledge to fill gaps.
+2. Be concise, helpful, and professional. Never present a diagnosis as certain; recommend clinician review where appropriate.
+3. If the retrieved context does not support an answer, say that clearly and ask for the relevant report value, test result, or scan finding.
+4. Mention the relevant source filename(s) from the context in your answer.
 """
 
     chat = client.chat.completions.create(

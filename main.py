@@ -9,10 +9,14 @@ import os
 from pathlib import Path
 import shutil
 from agents.ml_model import predict_cancer
-from agents.supervisor import supervisor
 from auth.auth import verify_token
 from routes.uploads import router as upload_router
 from agents.medgemma import run_medgemma_inference
+from rag.retrival import (
+    DIAGNOSTIC_REFUSAL_MESSAGE,
+    analyze_cancer_case,
+    is_diagnostic_query,
+)
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -24,7 +28,9 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 
-supabase = create_client(SUPABASE_URL,SUPABASE_KEY,SUPABASE_SERVICE_ROLE_KEY)
+# The Supabase client accepts one key. Use the service-role key for the
+# server-side API when it is configured; otherwise use the anon key.
+supabase = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY or SUPABASE_KEY)
 
 
 # -------------------------------
@@ -72,11 +78,13 @@ class AskRequests(BaseModel):
 @app.post("/chat")
 def chat_with_ai(data: AskRequests, user=Depends(verify_token)):
     try:
-        # Integrate MedGemma if image is provided, OR just run the query through it as a secondary check
-        if data.image_url or "medgemma" in data.query.lower():
-            # If specifically asked or image provided, use MedGemma primarily
+        is_diagnostic_request = is_diagnostic_query(data.query) or bool(data.image_url)
+        if not is_diagnostic_request:
+            response = DIAGNOSTIC_REFUSAL_MESSAGE
+        elif data.image_url or "medgemma" in data.query.lower():
+            # Image analysis remains diagnostic, but the final answer is always grounded in RAG.
             medgemma_insights = run_medgemma_inference(data.query, data.image_url)
-            rag_insights = str(supervisor.run(query=data.query, vision_score=data.vision_score))
+            rag_insights = str(analyze_cancer_case(data.query, vision_score=data.vision_score))
             
             if "Error" in medgemma_insights or "could not be loaded" in medgemma_insights:
                 # If MedGemma fails, just return the RAG/Supervisor response cleanly
@@ -84,11 +92,7 @@ def chat_with_ai(data: AskRequests, user=Depends(verify_token)):
             else:
                 response = f"**MedGemma Image Analysis:**\n{medgemma_insights}\n\n---\n**RAG Clinical Context:**\n{rag_insights}"
         else:
-             # Run Supervisor (handles RAG or Agent Team routing)
-             response = supervisor.run(
-                 query=data.query,
-                 vision_score=data.vision_score
-             )
+             response = analyze_cancer_case(data.query, vision_score=data.vision_score)
 
         # Store chat history if real user
         if user["id"] != "mock_test_id_123":

@@ -9,7 +9,7 @@ export function AIChatAssistant() {
     {
       id: 1,
       type: 'ai',
-      text: "Hello! I'm your AI health assistant. I can help explain your reports, suggest tests, or answer medical questions. How can I help you today?"
+      text: "I answer cancer-related diagnostic questions using the app's medical knowledge base. Ask about a report, test result, scan, biomarker, symptom, screening, or cancer-risk concern."
     }
   ]);
   const [input, setInput] = useState('');
@@ -27,10 +27,10 @@ export function AIChatAssistant() {
   }, [messages, isOpen, isLoading]);
 
   const quickQuestions = [
-    'Explain my latest report',
-    'What tests should I take?',
-    'Find an oncologist near me',
-    'What do my symptoms mean?'
+    'What does a lung nodule on a scan indicate?',
+    'Which biomarkers can indicate cancer risk?',
+    'How are malignant and benign findings distinguished?',
+    'What does an abnormal CBC result mean?'
   ];
 
   const handleSend = async (textInput: string = input) => {

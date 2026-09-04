@@ -7,7 +7,7 @@ from agno.tools.duckduckgo import DuckDuckGoTools
 
 WebSearchAgent = Agent(
     name="WebSearchAgent",
-    model=Groq(id="qwen/qwen3-32b"),
+    model=Groq(id="openai/gpt-oss-120b"),
     description="Searches the web for latest medical and cancer-related information.",
     markdown=False,
     instructions="""

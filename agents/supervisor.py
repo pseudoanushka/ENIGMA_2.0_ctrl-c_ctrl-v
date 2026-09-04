@@ -1,6 +1,6 @@
 # agents/supervisor.py
-from agno.models.groq import Groq
 from agno.agent import Agent
+from agno.models.groq import Groq
 from agno.team.team import Team
 from agents.web_agent import WebSearchAgent
 from agents.cancer_agent import CancerKnowledgeAgent
@@ -8,12 +8,12 @@ from rag.retrival import is_diagnostic_query, analyze_cancer_case
 from dotenv import load_dotenv
 import os 
 load_dotenv()
-Groq.api_key=os.getenv("GROQ_API_KEY")
+Groq.api_key = os.getenv("GROQ_API_KEY")
 
 
 # SupervisorAgent = Team(
 #     members=[WebSearchAgent, CancerKnowledgeAgent],
-#     model=Groq(id="qwen/qwen3-32b"),
+#     model=Groq(id="openai/gpt-oss-120b"),
 #     name="SupervisorAgent",
 #     markdown=True,
 #     show_members_responses=True,
@@ -42,7 +42,7 @@ class SupervisorAgent:
         # 🌍 General + Web Knowledge Team
         self.team = Team(
             members=[WebSearchAgent, CancerKnowledgeAgent],
-            model=Groq(id="qwen/qwen3-32b"),
+            model=Groq(id="openai/gpt-oss-120b"),
             name="SupervisorAgent",
             markdown=False,
             show_members_responses=False,

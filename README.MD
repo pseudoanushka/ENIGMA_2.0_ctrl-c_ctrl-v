@@ -1,17 +1,17 @@
-# ONCO DETECT AI
+# ENIGMA
 
 > **Evidence-grounded, AI-assisted cancer-risk insights — designed to inform, not diagnose.**
 
-![ONCO DETECT AI system overview](images/onco-detect-ai-system-hero.png)
+![ENIGMA system overview](images/enigma-system-hero.png)
 
-ONCO DETECT AI is a full-stack healthcare decision-support prototype that brings together patient reports, structured clinical indicators, medical-image understanding, and retrieval-augmented clinical chat. It gives patients and clinicians one workspace to explore cancer-related information while deliberately keeping a clinician in the decision loop.
+ENIGMA is a full-stack healthcare decision-support prototype that brings together patient reports, structured clinical indicators, medical-image understanding, and retrieval-augmented clinical chat. It gives patients and clinicians one workspace to explore cancer-related information while deliberately keeping a clinician in the decision loop.
 
-
-> ONCO DETECT AI is a hackathon/research prototype, **not** a medical device. It does not diagnose cancer, replace a qualified clinician, or establish treatment. Model output must be reviewed by a suitably qualified healthcare professional.
+> [!WARNING]
+> ENIGMA is a hackathon/research prototype, **not** a medical device. It does not diagnose cancer, replace a qualified clinician, or establish treatment. Model output must be reviewed by a suitably qualified healthcare professional.
 
 ## What the project does
 
-| Capability | What ONCO DETECT AI provides |
+| Capability | What ENIGMA provides |
 | --- | --- |
 | Guided clinical chat | Answers cancer-related diagnostic questions only when supporting information can be retrieved from the project’s medical knowledge base. |
 | Report intake | Accepts PDF, JPEG, and PNG reports; extracts text and produces an AI-generated summary. |
@@ -45,7 +45,7 @@ flowchart LR
     ML --> OUT
 ```
 
-## How information moves through ONCO DETECT AI
+## How information moves through ENIGMA
 
 ### 1. Sign in and establish user context
 
@@ -79,7 +79,7 @@ sequenceDiagram
     end
 ```
 
-The retrieval flow uses `sentence-transformers/all-MiniLM-L6-v2` embeddings and Qdrant maximal-marginal-relevance search. ONCO DETECT AI refuses generic or unrelated requests. If retrieval fails or returns no context, it reports that limitation instead of improvising an answer.
+The retrieval flow uses `sentence-transformers/all-MiniLM-L6-v2` embeddings and Qdrant maximal-marginal-relevance search. ENIGMA refuses generic or unrelated requests. If retrieval fails or returns no context, it reports that limitation instead of improvising an answer.
 
 ### 3. Add visual context when available
 
@@ -109,7 +109,7 @@ flowchart TD
 
 ## What is novel here
 
-ONCO DETECT AI’s differentiator is the **guardrailed combination of modalities and evidence**:
+ENIGMA’s differentiator is the **guardrailed combination of modalities and evidence**:
 
 1. **Grounding before generation.** Chat is constrained to retrieved Qdrant context, the LLM is told not to fill knowledge gaps, and source filenames are requested in answers.
 2. **Multimodal context with fallback.** MedGemma image observations are coupled with clinical retrieval; if vision loading fails, grounded text support remains available.
@@ -232,4 +232,4 @@ The repository includes a `Dockerfile` and `Procfile`. Before deployment, config
 
 ## Team
 
-Built as an ONCO DETECT AI hackathon project by **Hitesh** and **Anushka**.
+Built as an ENIGMA hackathon project by **Hitesh** and **Anushka**.
