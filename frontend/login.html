@@ -1,0 +1,52 @@
+ <!DOCTYPE html>
+<html>
+<head>
+  <title>Login</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>Login</h2>
+
+<button onclick="googleLogin()">Login with Google</button>
+
+<script>
+
+const SUPABASE_URL = "https://puowbtitbwrretgimmkb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1b3didGl0YndycmV0Z2ltbWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzQ1ODMsImV4cCI6MjA4NzYxMDU4M30.mTpAolvyE1biwJb2ErKL35zT6OWl6OE4P_GBQdcBhl4";
+
+const client = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+// Google OAuth
+async function googleLogin() {
+  await client.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: "http://127.0.0.1:5500/login.html"
+    }
+  });
+}
+
+// On load → check session
+window.onload = async function () {
+  const { data } = await client.auth.getSession();
+
+  if (data.session) {
+    const { data: userData } = await client.auth.getUser();
+    const role = userData.user.user_metadata?.role || "user";
+
+    if (role === "doctor") {
+      window.location.href = "doctor.html";
+    } else {
+      window.location.href = "user.html";
+    }
+  }
+};
+
+</script>
+
+</body>
+</html>

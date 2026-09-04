@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Doctor Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>Doctor Dashboard</h2>
+<button onclick="logout()">Logout</button>
+
+<p>Doctor tools here.</p>
+
+<script>
+
+const SUPABASE_URL = "https://puowbtitbwrretgimmkb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1b3didGl0YndycmV0Z2ltbWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzQ1ODMsImV4cCI6MjA4NzYxMDU4M30.mTpAolvyE1biwJb2ErKL35zT6OWl6OE4P_GBQdcBhl4";
+
+
+const client = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+// Protect page
+window.onload = async function () {
+  const { data } = await client.auth.getSession();
+  if (!data.session) {
+    window.location.href = "login.html";
+  }
+};
+
+// Logout
+async function logout() {
+  await client.auth.signOut();
+  window.location.href = "login.html";
+}
+
+</script>
+
+</body>
+</html>

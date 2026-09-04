@@ -1,0 +1,6 @@
+.venv/
+.env
+.pkl
+__pycache__/
+node_modeules/
+node_modules

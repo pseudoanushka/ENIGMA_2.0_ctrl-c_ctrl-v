@@ -1,0 +1,104 @@
+ <!DOCTYPE html>
+<html>
+<head>
+  <title>User Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<h2>User Dashboard</h2>
+<button onclick="logout()">Logout</button>
+
+<hr>
+
+<h3>Chat</h3>
+<textarea id="query" placeholder="Ask AI"></textarea><br><br>
+<button onclick="askAI()">Send</button>
+
+<pre id="chatResult"></pre>
+
+<hr>
+
+<h3>Upload</h3>
+<input type="file" id="file">
+<button onclick="uploadFile()">Upload</button>
+
+<pre id="uploadResult"></pre>
+
+<script>
+
+const SUPABASE_URL = "https://puowbtitbwrretgimmkb.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB1b3didGl0YndycmV0Z2ltbWtiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwMzQ1ODMsImV4cCI6MjA4NzYxMDU4M30.mTpAolvyE1biwJb2ErKL35zT6OWl6OE4P_GBQdcBhl4";
+
+const client = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY
+);
+
+// Protect page
+window.onload = async function () {
+  const { data } = await client.auth.getSession();
+  if (!data.session) {
+    window.location.href = "login.html";
+  }
+};
+
+// Logout
+async function logout() {
+  await client.auth.signOut();
+  window.location.href = "login.html";
+}
+
+// Chat endpoint
+async function askAI() {
+  const { data } = await client.auth.getSession();
+  const token = data.session.access_token;
+
+  const res = await fetch("http://127.0.0.1:8000/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token
+    },
+    body: JSON.stringify({
+      query: document.getElementById("query").value
+    })
+  });
+
+  const result = await res.json();
+  document.getElementById("chatResult").innerText =
+    JSON.stringify(result, null, 2);
+}
+
+// Upload endpoint
+async function uploadFile() {
+  const fileInput = document.getElementById("file");
+
+  if (!fileInput.files.length) {
+    alert("Select file first");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput.files[0]);
+
+  const { data } = await client.auth.getSession();
+  const token = data.session.access_token;
+
+  const res = await fetch("http://127.0.0.1:8000/upload", {
+    method: "POST",
+    headers: {
+      "Authorization": "Bearer " + token
+    },
+    body: formData
+  });
+
+  const result = await res.json();
+  document.getElementById("uploadResult").innerText =
+    JSON.stringify(result, null, 2);
+}
+
+</script>
+
+</body>
+</html>
